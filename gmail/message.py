@@ -208,7 +208,10 @@ class Message:
             return list()
 
     def parse_subject(self, encoded_subject):
-        dh = decode_header(encoded_subject)
+        try:
+            dh = decode_header(encoded_subject)
+        except TypeError:
+            return 'could not get subject from header'
         return ''.join([str(t[0]) for t in dh])
 
     def parse(self, raw_message):
