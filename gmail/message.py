@@ -1,17 +1,17 @@
 import datetime
 import email
+import logging
 import os
 import re
 import sys
 import time
 from email.encoders import encode_base64
-from email.header import decode_header, make_header
+from email.header import decode_header
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.utils import formatdate, make_msgid, getaddresses, parseaddr
+from email.utils import formatdate, make_msgid
 from imaplib import ParseFlags
-import logging
 from mimetypes import guess_type
 
 logging.basicConfig(level=logging.DEBUG)
@@ -27,7 +27,7 @@ def charset(s):
     return 'utf-8' if isinstance(s, unicode_type) else 'us-ascii'
 
 
-class Message():
+class Message:
 
     @staticmethod
     def create(subject, to, cc=None, bcc=None, text=None, is_html=False, attachments=None, sender=None, reply_to=None):
@@ -115,7 +115,7 @@ class Message():
         self.fetch()
 
     def is_read(self):
-        return ('\\Seen' in self.flags)
+        return '\\Seen' in self.flags
 
     def read(self):
         flag = '\\Seen'
@@ -130,7 +130,7 @@ class Message():
             self.flags.remove(flag)
 
     def is_starred(self):
-        return ('\\Flagged' in self.flags)
+        return '\\Flagged' in self.flags
 
     def star(self):
         flag = '\\Flagged'
@@ -145,11 +145,11 @@ class Message():
             self.flags.remove(flag)
 
     def is_draft(self):
-        return ('\\Draft' in self.flags)
+        return '\\Draft' in self.flags
 
     def has_label(self, label):
         full_label = '%s' % label
-        return (full_label in self.labels)
+        return full_label in self.labels
 
     def add_label(self, label):
         full_label = '%s' % label
@@ -164,7 +164,7 @@ class Message():
             self.labels.remove(full_label)
 
     def is_deleted(self):
-        return ('\\Deleted' in self.flags)
+        return '\\Deleted' in self.flags
 
     def delete(self):
         flag = '\\Deleted'
@@ -200,7 +200,7 @@ class Message():
         # flags = re.search(r'FLAGS \(([^\)]*)\)', headers).groups(1)[0].split(' ')
 
     def parse_labels(self, headers):
-        if re.search(r'X-GM-LABELS \(([^\)]+)\)', headers):
+        if re.search(r'X-GM-LABELS \(([^)]+)\)', headers):
             labels = re.search(
                 r'X-GM-LABELS \(([^\)]+)\)', headers).groups(1)[0].split(' ')
             return [l.replace('"', '') for l in labels]
@@ -209,15 +209,17 @@ class Message():
 
     def parse_subject(self, encoded_subject):
         dh = decode_header(encoded_subject)
-        default_charset = 'ASCII'
         return ''.join([str(t[0]) for t in dh])
 
     def parse(self, raw_message):
         raw_headers = raw_message[0].decode()
-        raw_email = raw_message[1].decode()
+        try:
+            raw_email = raw_message[1].decode()
+        except UnicodeDecodeError:
+            raw_email = raw_message[1].decode('latin-1')
 
         self.message = email.message_from_string(raw_email)
-        logger.debug('self.message is {}'.format(self.message))
+        # logger.debug('self.message is {}'.format(self.message))
 
         self.headers = self.parse_headers(self.message)
 
@@ -282,7 +284,7 @@ class Message():
             with open(file, 'rb') as f:
                 attachment.set_payload(f.read())
             attachment.add_header('Content-Disposition',
-                                  'attachment', filename=os.path.basename(a))
+                                  'attachment', filename=os.path.basename(file))
             encode_base64(attachment)
             return attachment
 
@@ -294,7 +296,9 @@ class Attachment:
         # Raw file data
         self.payload = attachment.get_payload(decode=True)
         # Filesize in kilobytes
-        self.size = int(round(len(self.payload) / 1000.0))
+        self.size = 0
+        if self.payload is not None:
+            self.size = int(round(len(self.payload) / 1000.0))
 
     def save(self, path=None):
         if path is None:

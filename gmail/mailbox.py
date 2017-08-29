@@ -2,7 +2,7 @@ from .message import Message
 from .utf import encode as encode_utf7, decode as decode_utf7
 
 
-class Mailbox():
+class Mailbox:
 
     def __init__(self, gmail, name="INBOX"):
         self.name = name

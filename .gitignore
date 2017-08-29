@@ -90,3 +90,6 @@ ENV/
 
 # visual studio code settings
 .vscode
+.idea/
+.*.swp
+gmail.egg-info/

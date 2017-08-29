@@ -24,3 +24,9 @@ class AuthenticationError(GmailException):
 
 class Timeout(GmailException):
     """The request timed out."""
+
+
+class MailboxError(GmailException):
+    pass
+
+

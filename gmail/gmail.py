@@ -1,6 +1,4 @@
-from email.utils import parseaddr, getaddresses
 import imaplib
-import itertools
 import logging
 import re
 import smtplib
@@ -15,7 +13,7 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger()
 
 
-class Gmail():
+class Gmail:
     # GMail IMAP defaults
     GMAIL_IMAP_HOST = 'imap.gmail.com'
     GMAIL_IMAP_PORT = 993
@@ -39,14 +37,7 @@ class Gmail():
 
         # self.connect_imap()
 
-    def _connect_imap(self, raise_errors=True):
-        # try:
-        #     self.imap = imaplib.IMAP4_SSL(self.GMAIL_IMAP_HOST, self.GMAIL_IMAP_PORT)
-        # except socket.error:
-        #     if raise_errors:
-        #         raise Exception('connect_imapion failure.')
-        #     self.imap = None
-
+    def _connect_imap(self):
         self.imap = imaplib.IMAP4_SSL(
             self.GMAIL_IMAP_HOST, self.GMAIL_IMAP_PORT)
 
@@ -72,7 +63,7 @@ class Gmail():
             self.smtp = None
             return False
 
-    def _connect_smtp(self, raise_errors=True):
+    def _connect_smtp(self):
 
         # self.smtp = smtplib.SMTP(self.server,self.port)
         # self.smtp.set_debuglevel(self.debug)
@@ -102,7 +93,12 @@ class Gmail():
 
     def use_mailbox(self, mailbox):
         if mailbox:
-            self.imap.select(mailbox)
+            if b' ' in mailbox:
+                mailbox = b'"' + mailbox + b'"'
+            try:
+                self.imap.select(mailbox)
+            except imaplib.IMAP4.error as e:
+                raise MailboxError(f'{e}: {mailbox} may not be in {self.imap.list()}.')
         self.current_mailbox = mailbox
 
     def mailbox(self, mailbox_name):
@@ -130,7 +126,7 @@ class Gmail():
             self.imap.delete(mailbox_name)
             del self.mailboxes[mailbox_name]
 
-    def _login_imap(self, username, password):
+    def _login_imap(self):
 
         if not self.imap:
             self._connect_imap()
@@ -158,7 +154,7 @@ class Gmail():
         self.password = password
 
         try:
-            self._login_imap(self.username, self.password)
+            self._login_imap()
         except imaplib.IMAP4.error:
             raise AuthenticationError
 
@@ -231,19 +227,19 @@ class Gmail():
         return self.mailbox(bytes("INBOX", "ascii"))
 
     def spam(self):
-        return self.mailbox(bytes("[Gmail]/Spam"))
+        return self.mailbox(bytes("[Gmail]/Spam", "ascii"))
 
     def starred(self):
-        return self.mailbox(bytes("[Gmail]/Starred"))
+        return self.mailbox(bytes("[Gmail]/Starred", "ascii"))
 
     def all_mail(self):
-        return self.mailbox(bytes("[Gmail]/All Mail"))
+        return self.mailbox(bytes("[Gmail]/All Mail", "ascii"))
 
     def sent_mail(self):
-        return self.mailbox(bytes("[Gmail]/Sent Mail"))
+        return self.mailbox(bytes("[Gmail]/Sent Mail", "ascii"))
 
     def important(self):
-        return self.mailbox(bytes("[Gmail]/Important"))
+        return self.mailbox(bytes("[Gmail]/Important", "ascii"))
 
     def mail_domain(self):
         return self.username.split('@')[-1]
