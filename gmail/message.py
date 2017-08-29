@@ -222,7 +222,6 @@ class Message:
             raw_email = raw_message[1].decode('latin-1')
 
         self.message = email.message_from_string(raw_email)
-        # logger.debug('self.message is {}'.format(self.message))
 
         self.headers = self.parse_headers(self.message)
 

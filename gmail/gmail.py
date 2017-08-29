@@ -89,7 +89,6 @@ class Gmail:
                 mailbox.external_name = mailbox_name
                 self.mailboxes[mailbox_name] = mailbox
 
-        logger.debug('self.mailboxes:\n{}'.format(self.mailboxes))
 
     def use_mailbox(self, mailbox):
         if mailbox:
